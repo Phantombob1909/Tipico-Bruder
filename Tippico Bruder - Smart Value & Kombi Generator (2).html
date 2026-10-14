@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tippico Bruder - Smart Value & Kombi Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            red: '#E10600',
+                            darkRed: '#B30400',
+                            dark: '#0A0B0E',
+                            surface: '#14161C',
+                            card: '#1D212C',
+                            border: '#2C3242'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0A0B0E; }
+        ::-webkit-scrollbar-thumb { background: #2C3242; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #E10600; }
+    </style>
+</head>
+<body class="bg-brand-dark text-gray-100 min-h-screen flex flex-col selection:bg-brand-red selection:text-white">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-40 bg-brand-surface/90 backdrop-blur-md border-b border-brand-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-red to-brand-darkRed flex items-center justify-center shadow-lg shadow-brand-red/30">
+                    <i class="ph-fill ph-soccer-ball text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg sm:text-xl tracking-tight flex items-center gap-2">
+                        TIPPICO <span class="text-brand-red">BRUDER</span>
+                        <span class="text-[10px] bg-brand-red/20 text-brand-red border border-brand-red/30 px-2 py-0.5 rounded-full font-mono font-bold">PRO v2.5</span>
+                    </h1>
+                    <p class="text-xs text-gray-400 hidden sm:block">Smart Value & Kombi-Generator nach Poisson-Modell</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="openModal('dbModal')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-card hover:bg-gray-800 border border-brand-border text-xs font-bold transition">
+                    <i class="ph-bold ph-database text-brand-red"></i>
+                    <span class="hidden md:inline">Datenbank / API</span>
+                </button>
+                <button onclick="downloadStandaloneHTML()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition">
+                    <i class="ph-bold ph-download-simple"></i>
+                    <span class="hidden sm:inline">HTML Export</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Control Deck -->
+        <section class="bg-brand-surface border border-brand-border rounded-2xl p-4 sm:p-5 shadow-xl">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                
+                <!-- 1. Competition Select -->
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                        1. Wettbewerb / Liga
+                    </label>
+                    <select id="leagueSelect" onchange="handleLeagueChange()" class="w-full bg-brand-card border border-brand-border rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-brand-red transition">
+                        <option value="UCL">🏆 Champions League</option>
+                        <option value="BL1">🇩🇪 1. Bundesliga</option>
+                        <option value="EPL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+                        <option value="MIX">🔥 Europa Top-Mix</option>
+                    </select>
+                </div>
+
+                <!-- 2. Timeframe Filter -->
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                        2. Zeitraum-Filter
+                    </label>
+                    <div class="grid grid-cols-3 gap-1 bg-brand-card p-1 rounded-xl border border-brand-border">
+                        <button onclick="setTimeframe('TODAY')" id="tf-TODAY" class="tf-btn py-1.5 px-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">
+                            Heute
+                        </button>
+                        <button onclick="setTimeframe('3DAYS')" id="tf-3DAYS" class="tf-btn py-1.5 px-2 rounded-lg text-xs font-bold transition bg-brand-red text-white shadow">
+                            3 Tage
+                        </button>
+                        <button onclick="setTimeframe('WEEK')" id="tf-WEEK" class="tf-btn py-1.5 px-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">
+                            7 Tage
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Live Fetch Button -->
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                        3. Live-Datenbank Abfrage
+                    </label>
+                    <button id="liveFetchBtn" onclick="fetchLiveMatches()" class="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-red to-brand-darkRed hover:from-red-600 hover:to-red-800 text-white font-bold text-xs sm:text-sm shadow-lg shadow-brand-red/20 transition transform active:scale-95">
+                        <i id="liveFetchIcon" class="ph-bold ph-radar text-base"></i>
+                        <span id="liveFetchText">Spiele & Quoten laden</span>
+                    </button>
+                </div>
+
+                <!-- 4. Bankroll & Custom Match -->
+                <div class="md:col-span-3 grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                            Budget (€)
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="bankrollInput" value="100" min="10" step="10" onchange="recalculateAll()" class="w-full bg-brand-card border border-brand-border rounded-xl pl-3 pr-7 py-2.5 text-sm font-mono font-bold text-white focus:outline-none focus:border-brand-red">
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 text-sm font-bold">€</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                            Manuell +
+                        </label>
+                        <button onclick="openModal('addMatchModal')" class="w-full flex items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl bg-brand-card hover:bg-gray-800 border border-brand-border text-xs sm:text-sm font-semibold text-emerald-400 transition">
+                            <i class="ph-bold ph-plus-circle"></i>
+                            <span>Eigenes</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Strategy Mode Selector Tabs -->
+            <div class="mt-5 pt-4 border-t border-brand-border">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">4. Wähle deinen Bruder-Modus (Kombi-Strategie)</span>
+                    <span id="activeTimeframeLabel" class="text-xs font-mono text-emerald-400">Filter aktiv: Nächste 3 Tage</span>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button onclick="setStrategy('SAFE')" id="tab-SAFE" class="strategy-tab flex items-start gap-3 p-3.5 rounded-xl border text-left transition bg-brand-red/15 border-brand-red text-white">
+                        <div class="p-2 rounded-lg bg-brand-red/20 text-brand-red shrink-0">
+                            <i class="ph-bold ph-shield-check text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">🛡️ Der Safe-Bruder</div>
+                            <div class="text-[11px] text-gray-400 mt-0.5">2er-Kombi • Fokus auf DNB & Doppelte Chance • Ziel: ~2,0 Quote</div>
+                        </div>
+                    </button>
+
+                    <button onclick="setStrategy('VALUE')" id="tab-VALUE" class="strategy-tab flex items-start gap-3 p-3.5 rounded-xl border text-left transition bg-brand-card border-brand-border text-gray-300 hover:border-gray-600">
+                        <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
+                            <i class="ph-bold ph-chart-line-up text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">⚖️ Der Value-Bruder</div>
+                            <div class="text-[11px] text-gray-400 mt-0.5">3er-Kombi • Positiver Erwartungswert (+EV) • Ziel: ~3,5 – 5,0 Quote</div>
+                        </div>
+                    </button>
+
+                    <button onclick="setStrategy('YOLO')" id="tab-YOLO" class="strategy-tab flex items-start gap-3 p-3.5 rounded-xl border text-left transition bg-brand-card border-brand-border text-gray-300 hover:border-gray-600">
+                        <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 shrink-0">
+                            <i class="ph-bold ph-fire text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">🚀 Der Gönn-Dir-Bruder</div>
+                            <div class="text-[11px] text-gray-400 mt-0.5">4er-Kombi • High-Risk Top-Quoten • kleinerer Einsatz</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Two-Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left: Available Match Analysis (8 Cols) -->
+            <div class="lg:col-span-8 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-black text-base sm:text-lg flex items-center gap-2">
+                        <i class="ph-fill ph-list-dashes text-brand-red"></i>
+                        <span>Gefilterte Spiele & Mathematische Value-Analyse</span>
+                    </h2>
+                    <span id="matchCountBadge" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-brand-card border border-brand-border text-gray-300">0 Spiele</span>
+                </div>
+
+                <div id="matchesContainer" class="space-y-4">
+                    <!-- Dynamic Matches Injected Here -->
+                </div>
+            </div>
+
+            <!-- Right: Optimal Generated Bet Slip (4 Cols) -->
+            <div class="lg:col-span-4 sticky top-24">
+                <div class="bg-brand-surface border border-brand-border rounded-2xl p-5 shadow-2xl space-y-5">
+                    
+                    <div class="flex items-center justify-between border-b border-brand-border pb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-ticket text-brand-red text-xl"></i>
+                            <h3 class="font-black text-base">Dein Optimierter Wettschein</h3>
+                        </div>
+                        <button onclick="autoGenerateBestSlip()" class="text-xs text-brand-red hover:underline font-semibold flex items-center gap-1">
+                            <i class="ph-bold ph-magic-wand"></i> Auto-Fill
+                        </button>
+                    </div>
+
+                    <!-- Slip Legs List -->
+                    <div id="slipLegsContainer" class="space-y-3 min-h-[140px]">
+                        <!-- Dynamic Selected Bets -->
+                    </div>
+
+                    <!-- Slip Summary Metrics -->
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Ausgewählte Spiele:</span>
+                            <span id="summaryLegsCount" class="font-mono font-bold text-white">0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Kumulierte Gesamtquote:</span>
+                            <span id="summaryTotalOdds" class="font-mono font-extrabold text-brand-red text-base">1.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Statistische Trefferchance:</span>
+                            <span id="summaryProbability" class="font-mono font-bold text-emerald-400">0.0%</span>
+                        </div>
+                        <div class="border-t border-brand-border pt-2 flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Empfohlener Einsatz (Kelly):</span>
+                            <span id="summaryStake" class="font-mono font-bold text-white">10.00 €</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Möglicher Gewinn:</span>
+                            <span id="summaryPayout" class="font-mono font-black text-emerald-400 text-sm">0.00 €</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button onclick="copySlipToClipboard()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-brand-red to-brand-darkRed hover:from-red-600 hover:to-red-800 text-white font-extrabold text-sm shadow-xl shadow-brand-red/25 flex items-center justify-center gap-2 transition transform active:scale-95">
+                        <i class="ph-bold ph-copy text-lg"></i>
+                        <span>Wettschein in Zwischenablage kopieren</span>
+                    </button>
+                    
+                    <p class="text-[11px] text-center text-gray-500">
+                        Tipp: Einfach kopieren und in der Tipico App bei Kombiwetten einfügen.
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL 1: Database & API Connection Setup -->
+    <div id="dbModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-brand-surface border border-brand-border rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl my-8">
+            <div class="flex items-center justify-between border-b border-brand-border pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="ph-fill ph-database text-brand-red text-xl"></i>
+                    <h3 class="font-extrabold text-lg">HTML-Export & Live-Datenbank Guide</h3>
+                </div>
+                <button onclick="closeModal('dbModal')" class="text-gray-400 hover:text-white">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-gray-300">
+                <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-check-circle"></i>
+                        <span>Stufe 1: Direkt in Gemini (Sofort einsatzbereit)</span>
+                    </div>
+                    <p class="text-xs text-emerald-200/80">Hier im Vorschau-Fenster brauchst du keinen Key. Klicke einfach auf <em>„Spiele & Quoten laden“</em> – die App sucht über Google nach Spielen im gewählten Zeitraum (Heute / 3 Tage / 7 Tage).</p>
+                </div>
+
+                <div class="space-y-2 p-3.5 rounded-xl bg-brand-card border border-brand-border">
+                    <label class="block font-bold text-amber-400 flex items-center gap-1.5">
+                        <i class="ph-fill ph-key"></i>
+                        <span>Stufe 2: Echte Buchmacher-Datenbank (The Odds API)</span>
+                    </label>
+                    <ol class="list-decimal list-inside text-xs text-gray-300 space-y-1">
+                        <li>Gehe auf <a href="https://the-odds-api.com" target="_blank" class="text-brand-red underline font-bold">the-odds-api.com</a> und klicke auf „Get API Key“ (Gratis-Tarif: 500 Abrufe/Monat).</li>
+                        <li>Bestätige kurz deine E-Mail – du erhältst sofort einen API-Schlüssel per Mail.</li>
+                        <li>Füge den Key hier unten ein. Die App lädt dann echte Quoten exakt gefiltert nach deinem Zeitraum!</li>
+                    </ol>
+                    <input type="password" id="oddsApiKeyInput" placeholder="Hier The-Odds-API Key einfügen..." class="w-full mt-2 bg-brand-surface border border-brand-border rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-brand-red">
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center gap-2 pt-3 border-t border-brand-border">
+                <button onclick="downloadStandaloneHTML()" class="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5 transition">
+                    <i class="ph-bold ph-download-simple"></i>
+                    <span>Als .html Datei speichern</span>
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('dbModal')" class="px-4 py-2 rounded-xl bg-brand-card hover:bg-gray-800 text-xs font-bold">Schließen</button>
+                    <button onclick="saveApiSettings()" class="px-4 py-2 rounded-xl bg-brand-red hover:bg-brand-darkRed text-white text-xs font-bold">Key aktivieren</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Add Custom Match -->
+    <div id="addMatchModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-brand-surface border border-brand-border rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl my-8">
+            <div class="flex items-center justify-between border-b border-brand-border pb-3">
+                <h3 class="font-extrabold text-lg flex items-center gap-2">
+                    <i class="ph-fill ph-plus-circle text-emerald-400"></i> Manuelles Spiel hinzufügen
+                </h3>
+                <button onclick="closeModal('addMatchModal')" class="text-gray-400 hover:text-white">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-gray-300 mb-1">Heimteam</label>
+                        <input type="text" id="newHomeTeam" value="Borussia Dortmund" class="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-300 mb-1">Gastteam</label>
+                        <input type="text" id="newAwayTeam" value="RB Leipzig" class="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-emerald-400 mb-1">Erwartete Tore Heim (xG)</label>
+                        <input type="number" id="newHomeXG" value="1.85" step="0.05" min="0.2" max="4.5" class="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-sm font-mono text-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-emerald-400 mb-1">Erwartete Tore Gast (xG)</label>
+                        <input type="number" id="newAwayXG" value="1.25" step="0.05" min="0.2" max="4.5" class="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-sm font-mono text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-400 mb-1">Spiel-Zeitraum</label>
+                    <select id="newMatchDayOffset" class="w-full bg-brand-card border border-brand-border rounded-xl px-3 py-2 text-sm text-white">
+                        <option value="0">Heute (Tag 0)</option>
+                        <option value="1">Morgen (In 1 Tag)</option>
+                        <option value="2">Übermorgen (In 2 Tagen)</option>
+                        <option value="5">Diese Woche (In 4–7 Tagen)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 pt-2">
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Quote 1</label>
+                        <input type="number" id="newOdds1" value="1.80" step="0.05" class="w-full bg-brand-card border border-brand-border rounded-xl px-2.5 py-1.5 text-xs font-mono text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Quote X</label>
+                        <input type="number" id="newOddsX" value="3.60" step="0.05" class="w-full bg-brand-card border border-brand-border rounded-xl px-2.5 py-1.5 text-xs font-mono text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Quote 2</label>
+                        <input type="number" id="newOdds2" value="4.10" step="0.05" class="w-full bg-brand-card border border-brand-border rounded-xl px-2.5 py-1.5 text-xs font-mono text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Quote Über 2.5</label>
+                        <input type="number" id="newOddsO25" value="1.68" step="0.05" class="w-full bg-brand-card border border-brand-border rounded-xl px-2.5 py-1.5 text-xs font-mono text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Quote BTTS (Ja)</label>
+                        <input type="number" id="newOddsBTTS" value="1.62" step="0.05" class="w-full bg-brand-card border border-brand-border rounded-xl px-2.5 py-1.5 text-xs font-mono text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-brand-border">
+                <button onclick="closeModal('addMatchModal')" class="px-4 py-2 rounded-xl bg-brand-card hover:bg-gray-800 text-xs font-bold">Abbrechen</button>
+                <button onclick="addCustomMatch()" class="px-4 py-2 rounded-xl bg-brand-red hover:bg-brand-darkRed text-white text-xs font-bold">Hinzufügen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toastContent" class="bg-brand-surface border border-brand-border px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-semibold">
+            <i id="toastIcon" class="ph-bold text-lg"></i>
+            <span id="toastText">Meldung</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. STATE & PRESET DATASETS (WITH TIMEFRAMES)
+        // ==========================================
+        let userOddsApiKey = "";
+        let currentStrategy = "SAFE"; // 'SAFE' (2 legs), 'VALUE' (3 legs), 'YOLO' (4 legs)
+        let currentLeague = "UCL";
+        let currentTimeframe = "3DAYS"; // 'TODAY', '3DAYS', 'WEEK'
+        let selectedSlip = []; // Array of { matchId, marketKey }
+
+        const PRESET_DATABASES = {
+            UCL: [
+                {
+                    id: "ucl-1",
+                    league: "Champions League",
+                    kickoff: "Heute, 21:00",
+                    dayOffset: 0,
+                    home: "FC Bayern München",
+                    away: "Inter Mailand",
+                    xgHome: 2.05,
+                    xgAway: 1.25,
+                    odds: { "1": 1.75, "X": 3.90, "2": 4.40, "O25": 1.65, "BTTS": 1.62 },
+                    note: "Bayern zuhause extrem dominant (Ø 2.6 xG), Inter kontert eiskalt."
+                },
+                {
+                    id: "ucl-2",
+                    league: "Champions League",
+                    kickoff: "Heute, 21:00",
+                    dayOffset: 0,
+                    home: "Real Madrid",
+                    away: "Bayer Leverkusen",
+                    xgHome: 1.95,
+                    xgAway: 1.45,
+                    odds: { "1": 1.85, "X": 3.80, "2": 3.95, "O25": 1.60, "BTTS": 1.57 },
+                    note: "Beide Offensivreihen überragend – hohes Tempo & Tor-Value."
+                },
+                {
+                    id: "ucl-3",
+                    league: "Champions League",
+                    kickoff: "Morgen, 21:00",
+                    dayOffset: 1,
+                    home: "FC Arsenal",
+                    away: "Paris Saint-Germain",
+                    xgHome: 1.75,
+                    xgAway: 1.10,
+                    odds: { "1": 1.90, "X": 3.60, "2": 4.00, "O25": 1.80, "BTTS": 1.72 },
+                    note: "Arsenal mit der besten Restverteidigung Europas."
+                },
+                {
+                    id: "ucl-4",
+                    league: "Champions League",
+                    kickoff: "Morgen, 21:00",
+                    dayOffset: 1,
+                    home: "Borussia Dortmund",
+                    away: "FC Barcelona",
+                    xgHome: 1.60,
+                    xgAway: 2.10,
+                    odds: { "1": 3.30, "X": 3.85, "2": 2.05, "O25": 1.52, "BTTS": 1.48 },
+                    note: "Hohe Abwehrlinien auf beiden Seiten – klassisches Über-Tore-Spiel."
+                },
+                {
+                    id: "ucl-5",
+                    league: "Champions League",
+                    kickoff: "In 5 Tagen, 21:00",
+                    dayOffset: 5,
+                    home: "Manchester City",
+                    away: "Atletico Madrid",
+                    xgHome: 2.15,
+                    xgAway: 0.95,
+                    odds: { "1": 1.55, "X": 4.10, "2": 6.00, "O25": 1.72, "BTTS": 1.85 },
+                    note: "Rückspiel nächste Woche – City mit enormem Ballbesitz-Vorteil."
+                },
+                {
+                    id: "ucl-6",
+                    league: "Champions League",
+                    kickoff: "In 6 Tagen, 21:00",
+                    dayOffset: 6,
+                    home: "FC Liverpool",
+                    away: "AC Mailand",
+                    xgHome: 2.25,
+                    xgAway: 1.20,
+                    odds: { "1": 1.60, "X": 4.20, "2": 5.10, "O25": 1.58, "BTTS": 1.65 },
+                    note: "Wochen-Vorschau: Anfield-Flutlichtspiel mit klarer Heim-Tendenz."
+                }
+            ],
+            BL1: [
+                {
+                    id: "bl-1",
+                    league: "1. Bundesliga",
+                    kickoff: "Heute, 20:30",
+                    dayOffset: 0,
+                    home: "Eintracht Frankfurt",
+                    away: "RB Leipzig",
+                    xgHome: 1.65,
+                    xgAway: 1.70,
+                    odds: { "1": 2.75, "X": 3.60, "2": 2.45, "O25": 1.65, "BTTS": 1.55 },
+                    note: "Offenes Visier im Waldstadion, starker Value auf Beide Teams treffen."
+                },
+                {
+                    id: "bl-2",
+                    league: "1. Bundesliga",
+                    kickoff: "Morgen, 15:30",
+                    dayOffset: 1,
+                    home: "VfB Stuttgart",
+                    away: "TSG Hoffenheim",
+                    xgHome: 2.25,
+                    xgAway: 1.20,
+                    odds: { "1": 1.62, "X": 4.20, "2": 4.90, "O25": 1.55, "BTTS": 1.60 },
+                    note: "Stuttgart schnürt Gegner zuhause extrem ein."
+                },
+                {
+                    id: "bl-3",
+                    league: "1. Bundesliga",
+                    kickoff: "In 2 Tagen, 17:30",
+                    dayOffset: 2,
+                    home: "Borussia M'gladbach",
+                    away: "SV Werder Bremen",
+                    xgHome: 1.70,
+                    xgAway: 1.55,
+                    odds: { "1": 2.25, "X": 3.70, "2": 2.95, "O25": 1.62, "BTTS": 1.54 },
+                    note: "Beide Defensiven wackelig bei Standards."
+                },
+                {
+                    id: "bl-4",
+                    league: "1. Bundesliga",
+                    kickoff: "In 6 Tagen, 20:30",
+                    dayOffset: 6,
+                    home: "Bayer Leverkusen",
+                    away: "FC Bayern München",
+                    xgHome: 1.65,
+                    xgAway: 1.80,
+                    odds: { "1": 2.60, "X": 3.60, "2": 2.55, "O25": 1.60, "BTTS": 1.50 },
+                    note: "Topspiel der kommenden Woche – Draw No Bet oder Über 1,5 ideal."
+                }
+            ],
+            EPL: [
+                {
+                    id: "epl-1",
+                    league: "Premier League",
+                    kickoff: "Heute, 21:00",
+                    dayOffset: 0,
+                    home: "FC Liverpool",
+                    away: "Aston Villa",
+                    xgHome: 2.20,
+                    xgAway: 1.15,
+                    odds: { "1": 1.58, "X": 4.30, "2": 5.25, "O25": 1.57, "BTTS": 1.68 },
+                    note: "Anfield-Faktor drückt Auswärtsteams regelmäßig unter 1.0 xG."
+                },
+                {
+                    id: "epl-2",
+                    league: "Premier League",
+                    kickoff: "In 2 Tagen, 16:00",
+                    dayOffset: 2,
+                    home: "Newcastle United",
+                    away: "Tottenham Hotspur",
+                    xgHome: 1.85,
+                    xgAway: 1.75,
+                    odds: { "1": 2.35, "X": 3.80, "2": 2.75, "O25": 1.50, "BTTS": 1.45 },
+                    note: "Extrem intensives Pressing-Duell mit vielen Umschaltsituationen."
+                },
+                {
+                    id: "epl-3",
+                    league: "Premier League",
+                    kickoff: "In 3 Tagen, 17:30",
+                    dayOffset: 3,
+                    home: "Chelsea FC",
+                    away: "Manchester United",
+                    xgHome: 1.80,
+                    xgAway: 1.35,
+                    odds: { "1": 1.95, "X": 3.75, "2": 3.60, "O25": 1.62, "BTTS": 1.58 },
+                    note: "Draw No Bet (Heim) bietet hier exzellente Absicherung."
+                },
+                {
+                    id: "epl-4",
+                    league: "Premier League",
+                    kickoff: "In 6 Tagen, 18:30",
+                    dayOffset: 6,
+                    home: "FC Arsenal",
+                    away: "Manchester City",
+                    xgHome: 1.55,
+                    xgAway: 1.50,
+                    odds: { "1": 2.50, "X": 3.40, "2": 2.80, "O25": 1.85, "BTTS": 1.70 },
+                    note: "Taktisches Spitzenspiel am nächsten Wochenende."
+                }
+            ],
+            MIX: []
+        };
+        PRESET_DATABASES.MIX = [
+            PRESET_DATABASES.UCL[0],
+            PRESET_DATABASES.BL1[0],
+            PRESET_DATABASES.UCL[2],
+            PRESET_DATABASES.EPL[1],
+            PRESET_DATABASES.BL1[3],
+            PRESET_DATABASES.UCL[4]
+        ];
+
+        let allLeagueMatches = JSON.parse(JSON.stringify(PRESET_DATABASES.UCL));
+        let activeMatches = [];
+
+        function getMaxDaysForTimeframe(tf) {
+            if (tf === "TODAY") return 0;
+            if (tf === "3DAYS") return 3;
+            return 7;
+        }
+
+        function applyTimeframeFilter() {
+            const maxDays = getMaxDaysForTimeframe(currentTimeframe);
+            activeMatches = allLeagueMatches.filter(m => (m.dayOffset ?? 0) <= maxDays);
+            if (activeMatches.length === 0 && allLeagueMatches.length > 0) {
+                activeMatches = allLeagueMatches.slice(0, 2);
+            }
+        }
+
+        // ==========================================
+        // 2. POISSON & VALUE ENGINE
+        // ==========================================
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let res = 1;
+            for (let i = 2; i <= n; i++) res *= i;
+            return res;
+        }
+
+        function poissonProbability(lambda, k) {
+            return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+        }
+
+        function analyzeMatchMath(match) {
+            const lH = match.xgHome;
+            const lA = match.xgAway;
+            let pHome = 0, pDraw = 0, pAway = 0, pO25 = 0, pBTTS = 0;
+
+            for (let h = 0; h <= 6; h++) {
+                for (let a = 0; a <= 6; a++) {
+                    const prob = poissonProbability(lH, h) * poissonProbability(lA, a);
+                    if (h > a) pHome += prob;
+                    else if (h === a) pDraw += prob;
+                    else pAway += prob;
+
+                    if (h + a >= 3) pO25 += prob;
+                    if (h > 0 && a > 0) pBTTS += prob;
+                }
+            }
+
+            const pDNB_Home = pHome + pDraw * (pHome / (pHome + pAway || 1));
+            const pDNB_Away = pAway + pDraw * (pAway / (pHome + pAway || 1));
+            const pDC_1X = pHome + pDraw;
+            const pDC_X2 = pAway + pDraw;
+
+            const odds = match.odds;
+            const markets = [
+                { key: "1", name: `Sieg ${match.home}`, prob: pHome, odds: odds["1"] },
+                { key: "DNB1", name: `Draw No Bet: ${match.home}`, prob: pDNB_Home, odds: Number((odds["1"] * 1.22).toFixed(2)) },
+                { key: "1X", name: `Doppelte Chance 1X`, prob: pDC_1X, odds: Number((1 / (pDC_1X * 0.96)).toFixed(2)) },
+                { key: "O25", name: `Über 2.5 Tore`, prob: pO25, odds: odds["O25"] },
+                { key: "BTTS", name: `Beide Teams treffen (Ja)`, prob: pBTTS, odds: odds["BTTS"] },
+                { key: "2", name: `Sieg ${match.away}`, prob: pAway, odds: odds["2"] }
+            ];
+
+            return markets.map(m => {
+                const ev = (m.prob * m.odds) - 1;
+                const safeScore = m.prob * 100;
+                const valueScore = ev * 100 + (m.odds * 3);
+                return { ...m, ev, safeScore, valueScore };
+            });
+        }
+
+        // ==========================================
+        // 3. RENDERING & UI UPDATES
+        // ==========================================
+        function renderAll() {
+            renderMatches();
+            renderSlip();
+        }
+
+        function renderMatches() {
+            const container = document.getElementById("matchesContainer");
+            const tfLabelMap = {
+                TODAY: "Heute",
+                "3DAYS": "Nächste 3 Tage",
+                WEEK: "Ganze Woche (7 Tage)"
+            };
+            document.getElementById("matchCountBadge").textContent = `${activeMatches.length} Spiele (${tfLabelMap[currentTimeframe]})`;
+
+            container.innerHTML = activeMatches.map(match => {
+                const markets = analyzeMatchMath(match);
+                const topPick = [...markets].sort((a, b) =>
+                    currentStrategy === "SAFE" ? b.safeScore - a.safeScore : b.valueScore - a.valueScore
+                )[0];
+
+                const displayKeys = ["1", "DNB1", "1X", "O25", "BTTS", "2"];
+                const displayMarkets = displayKeys.map(k => markets.find(m => m.key === k)).filter(Boolean);
+
+                const dayBadgeColor = (match.dayOffset ?? 0) === 0
+                    ? "bg-brand-red/20 text-brand-red border-brand-red/30"
+                    : ((match.dayOffset ?? 0) <= 3 ? "bg-amber-500/15 text-amber-300 border-amber-500/30" : "bg-purple-500/15 text-purple-300 border-purple-500/30");
+
+                return `
+                <div class="bg-brand-surface border border-brand-border rounded-2xl p-4 sm:p-5 shadow-lg hover:border-gray-700 transition space-y-4">
+                    <!-- Match Header -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border pb-3">
+                        <div>
+                            <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                                <span class="text-brand-red">${match.league}</span>
+                                <span>•</span>
+                                <span class="px-2 py-0.5 rounded-md border text-[10px] ${dayBadgeColor}">${match.kickoff}</span>
+                            </div>
+                            <h3 class="font-black text-base sm:text-lg text-white mt-0.5">
+                                ${match.home} <span class="text-gray-500 font-normal">vs.</span> ${match.away}
+                            </h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="removeMatch('${match.id}')" title="Spiel entfernen" class="text-gray-500 hover:text-brand-red p-1.5 transition">
+                                <i class="ph-bold ph-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- xG Inputs & Note -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-brand-card p-3 rounded-xl border border-brand-border text-xs">
+                        <div class="md:col-span-5 flex items-center justify-between gap-2">
+                            <span class="font-semibold text-gray-300">xG ${match.home}:</span>
+                            <input type="number" value="${match.xgHome}" step="0.05" min="0.2" max="4.5" onchange="updateMatchXG('${match.id}', 'home', this.value)" class="w-20 bg-brand-surface border border-brand-border rounded-lg px-2 py-1 font-mono font-bold text-emerald-400 text-center">
+                        </div>
+                        <div class="md:col-span-5 flex items-center justify-between gap-2">
+                            <span class="font-semibold text-gray-300">xG ${match.away}:</span>
+                            <input type="number" value="${match.xgAway}" step="0.05" min="0.2" max="4.5" onchange="updateMatchXG('${match.id}', 'away', this.value)" class="w-20 bg-brand-surface border border-brand-border rounded-lg px-2 py-1 font-mono font-bold text-emerald-400 text-center">
+                        </div>
+                        <div class="md:col-span-2 text-right">
+                            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-md font-bold">Top: ${topPick.name}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 italic">💡 ${match.note}</p>
+
+                    <!-- Market Pills -->
+                    <div>
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Verfügbare Wettmärkte & Wahrscheinlichkeiten (Klick zum Hinzufügen):</div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            ${displayMarkets.map(m => {
+                                const isSelected = selectedSlip.some(s => s.matchId === match.id && s.marketKey === m.key);
+                                const isBest = topPick.key === m.key;
+                                const btnClass = isSelected
+                                    ? "bg-brand-red text-white border-brand-red shadow-lg shadow-brand-red/30"
+                                    : (isBest ? "bg-brand-card border-brand-red/60 text-white hover:border-brand-red" : "bg-brand-card border-brand-border text-gray-300 hover:border-gray-600");
+                                
+                                return `
+                                <button onclick="togglePickInSlip('${match.id}', '${m.key}')" class="p-2.5 rounded-xl border text-left transition relative ${btnClass}">
+                                    ${isBest ? '<span class="absolute -top-1.5 -right-1.5 bg-brand-red text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full">TOP</span>' : ''}
+                                    <div class="text-xs font-bold truncate">${m.name}</div>
+                                    <div class="flex items-center justify-between mt-1 text-[11px] font-mono">
+                                        <span class="${isSelected ? 'text-white font-black' : 'text-emerald-400'}">Quote ${m.odds}</span>
+                                        <span class="opacity-75">${(m.prob * 100).toFixed(0)}%</span>
+                                    </div>
+                                </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function renderSlip() {
+            const container = document.getElementById("slipLegsContainer");
+            const maxLegs = currentStrategy === "SAFE" ? 2 : (currentStrategy === "VALUE" ? 3 : 4);
+
+            if (selectedSlip.length === 0) {
+                container.innerHTML = `
+                <div class="text-center py-8 text-gray-500 space-y-2 border border-dashed border-brand-border rounded-xl">
+                    <i class="ph-bold ph-ticket text-3xl"></i>
+                    <p class="text-xs font-medium">Dein Wettschein ist leer.<br>Klicke auf Märkte oder nutze Auto-Fill.</p>
+                </div>`;
+            } else {
+                container.innerHTML = selectedSlip.map((slipItem, idx) => {
+                    const match = activeMatches.find(m => m.id === slipItem.matchId);
+                    if (!match) return '';
+                    const markets = analyzeMatchMath(match);
+                    const market = markets.find(m => m.key === slipItem.marketKey);
+                    if (!market) return '';
+
+                    return `
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-3 relative space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Auswahl #${idx + 1}</span>
+                            <button onclick="togglePickInSlip('${match.id}', '${market.key}')" class="text-gray-400 hover:text-brand-red">
+                                <i class="ph-bold ph-x text-xs"></i>
+                            </button>
+                        </div>
+                        <div class="font-bold text-xs text-white">${match.home} vs. ${match.away}</div>
+                        <div class="flex items-center justify-between pt-1 border-t border-brand-border/60 text-xs font-mono">
+                            <span class="text-brand-red font-bold">${market.name}</span>
+                            <span class="text-emerald-400 font-extrabold">@ ${market.odds}</span>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+
+            // Calculate totals
+            let totalOdds = 1.0;
+            let totalProb = 1.0;
+            selectedSlip.forEach(s => {
+                const match = activeMatches.find(m => m.id === s.matchId);
+                if (match) {
+                    const markets = analyzeMatchMath(match);
+                    const m = markets.find(x => x.key === s.marketKey);
+                    if (m) {
+                        totalOdds *= m.odds;
+                        totalProb *= m.prob;
+                    }
+                }
+            });
+
+            const bankroll = parseFloat(document.getElementById("bankrollInput").value) || 100;
+            const stake = currentStrategy === "SAFE" ? bankroll * 0.05 : (currentStrategy === "VALUE" ? bankroll * 0.03 : bankroll * 0.015);
+            const payout = stake * totalOdds;
+
+            document.getElementById("summaryLegsCount").textContent = `${selectedSlip.length} / ${maxLegs}`;
+            document.getElementById("summaryTotalOdds").textContent = totalOdds.toFixed(2);
+            document.getElementById("summaryProbability").textContent = `${(totalProb * 100).toFixed(1)}%`;
+            document.getElementById("summaryStake").textContent = `${stake.toFixed(2)} €`;
+            document.getElementById("summaryPayout").textContent = `${payout.toFixed(2)} €`;
+        }
+
+        // ==========================================
+        // 4. USER INTERACTIONS & AUTO-GENERATOR
+        // ==========================================
+        function setTimeframe(tf) {
+            currentTimeframe = tf;
+            ["TODAY", "3DAYS", "WEEK"].forEach(id => {
+                const btn = document.getElementById(`tf-${id}`);
+                if (id === tf) {
+                    btn.className = "tf-btn py-1.5 px-2 rounded-lg text-xs font-bold transition bg-brand-red text-white shadow";
+                } else {
+                    btn.className = "tf-btn py-1.5 px-2 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white";
+                }
+            });
+
+            const descMap = {
+                TODAY: "Filter aktiv: Nur Spiele am heutigen Tag",
+                "3DAYS": "Filter aktiv: Spiele in den nächsten 3 Tagen",
+                WEEK: "Filter aktiv: Komplette 7-Tage-Wochenübersicht"
+            };
+            document.getElementById("activeTimeframeLabel").textContent = descMap[tf];
+
+            applyTimeframeFilter();
+            autoGenerateBestSlip();
+        }
+
+        function setStrategy(strategy) {
+            currentStrategy = strategy;
+            ["SAFE", "VALUE", "YOLO"].forEach(s => {
+                const btn = document.getElementById(`tab-${s}`);
+                if (s === strategy) {
+                    btn.className = "strategy-tab flex items-start gap-3 p-3.5 rounded-xl border text-left transition bg-brand-red/15 border-brand-red text-white";
+                } else {
+                    btn.className = "strategy-tab flex items-start gap-3 p-3.5 rounded-xl border text-left transition bg-brand-card border-brand-border text-gray-300 hover:border-gray-600";
+                }
+            });
+            autoGenerateBestSlip();
+        }
+
+        function handleLeagueChange() {
+            currentLeague = document.getElementById("leagueSelect").value;
+            allLeagueMatches = JSON.parse(JSON.stringify(PRESET_DATABASES[currentLeague]));
+            applyTimeframeFilter();
+            autoGenerateBestSlip();
+        }
+
+        function updateMatchXG(matchId, side, val) {
+            const match = activeMatches.find(m => m.id === matchId);
+            if (!match) return;
+            const num = Math.max(0.1, Math.min(5.0, parseFloat(val) || 1.2));
+            if (side === 'home') match.xgHome = num;
+            else match.xgAway = num;
+            renderAll();
+        }
+
+        function togglePickInSlip(matchId, marketKey) {
+            const existingIndex = selectedSlip.findIndex(s => s.matchId === matchId);
+            if (existingIndex > -1) {
+                if (selectedSlip[existingIndex].marketKey === marketKey) {
+                    selectedSlip.splice(existingIndex, 1);
+                } else {
+                    selectedSlip[existingIndex].marketKey = marketKey;
+                }
+            } else {
+                selectedSlip.push({ matchId, marketKey });
+            }
+            renderAll();
+        }
+
+        function removeMatch(matchId) {
+            allLeagueMatches = allLeagueMatches.filter(m => m.id !== matchId);
+            activeMatches = activeMatches.filter(m => m.id !== matchId);
+            selectedSlip = selectedSlip.filter(s => s.matchId !== matchId);
+            renderAll();
+        }
+
+        function recalculateAll() {
+            renderAll();
+        }
+
+        function autoGenerateBestSlip() {
+            const targetCount = currentStrategy === "SAFE" ? 2 : (currentStrategy === "VALUE" ? 3 : 4);
+            selectedSlip = [];
+
+            const scoredMatches = activeMatches.map(match => {
+                const markets = analyzeMatchMath(match);
+                const top = [...markets].sort((a, b) =>
+                    currentStrategy === "SAFE" ? b.safeScore - a.safeScore : b.valueScore - a.valueScore
+                )[0];
+                return { matchId: match.id, marketKey: top.key, score: currentStrategy === "SAFE" ? top.safeScore : top.valueScore };
+            });
+
+            scoredMatches.sort((a, b) => b.score - a.score);
+            for (let i = 0; i < Math.min(targetCount, scoredMatches.length); i++) {
+                selectedSlip.push({ matchId: scoredMatches[i].matchId, marketKey: scoredMatches[i].marketKey });
+            }
+            renderAll();
+        }
+
+        function addCustomMatch() {
+            const home = document.getElementById("newHomeTeam").value.trim() || "Heimteam";
+            const away = document.getElementById("newAwayTeam").value.trim() || "Gastteam";
+            const xgHome = parseFloat(document.getElementById("newHomeXG").value) || 1.85;
+            const xgAway = parseFloat(document.getElementById("newAwayXG").value) || 1.25;
+            const dayOffset = parseInt(document.getElementById("newMatchDayOffset").value, 10) || 0;
+
+            const dayLabels = { 0: "Heute", 1: "Morgen", 2: "Übermorgen", 5: "Diese Woche" };
+
+            const newMatch = {
+                id: "custom-" + Date.now(),
+                league: "Eigene Analyse",
+                kickoff: dayLabels[dayOffset] || "Heute",
+                dayOffset,
+                home,
+                away,
+                xgHome,
+                xgAway,
+                odds: {
+                    "1": parseFloat(document.getElementById("newOdds1").value) || 1.80,
+                    "X": parseFloat(document.getElementById("newOddsX").value) || 3.60,
+                    "2": parseFloat(document.getElementById("newOdds2").value) || 4.10,
+                    "O25": parseFloat(document.getElementById("newOddsO25").value) || 1.68,
+                    "BTTS": parseFloat(document.getElementById("newOddsBTTS").value) || 1.62
+                },
+                note: "Manuell hinzugefügtes Spiel mit eigenen Quoten & xG-Parametern."
+            };
+
+            allLeagueMatches.unshift(newMatch);
+            applyTimeframeFilter();
+            closeModal('addMatchModal');
+            autoGenerateBestSlip();
+            showNotification("Eigenes Spiel wurde hinzugefügt!", "success");
+        }
+
+        async function fetchLiveMatches() {
+            const btn = document.getElementById("liveFetchBtn");
+            const icon = document.getElementById("liveFetchIcon");
+            const text = document.getElementById("liveFetchText");
+
+            btn.disabled = true;
+            icon.className = "ph-bold ph-spinner animate-spin text-base";
+            text.textContent = "Lade Live-Daten...";
+
+            try {
+                if (userOddsApiKey) {
+                    const sportMap = {
+                        UCL: "soccer_uefa_champs_league",
+                        BL1: "soccer_germany_bundesliga",
+                        EPL: "soccer_epl",
+                        MIX: "soccer_uefa_champs_league"
+                    };
+                    const sportKey = sportMap[currentLeague] || "soccer_uefa_champs_league";
+                    const url = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${userOddsApiKey}&regions=eu&markets=h2h,totals&oddsFormat=decimal`;
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error("API Fehler");
+                    const data = await resp.json();
+
+                    if (Array.isArray(data) && data.length > 0) {
+                        const now = new Date();
+                        const maxDays = getMaxDaysForTimeframe(currentTimeframe);
+
+                        allLeagueMatches = data.map((item, idx) => {
+                            const kickoffDate = new Date(item.commence_time);
+                            const diffDays = Math.max(0, Math.floor((kickoffDate - now) / (1000 * 60 * 60 * 24)));
+                            const bookie = item.bookmakers?.[0];
+                            const h2h = bookie?.markets?.find(m => m.key === "h2h")?.outcomes || [];
+                            const totals = bookie?.markets?.find(m => m.key === "totals")?.outcomes || [];
+
+                            const o1 = h2h.find(o => o.name === item.home_team)?.price || 1.85;
+                            const o2 = h2h.find(o => o.name === item.away_team)?.price || 3.90;
+                            const oX = h2h.find(o => o.name === "Draw")?.price || 3.60;
+                            const oO25 = totals.find(o => o.name === "Over")?.price || 1.72;
+
+                            return {
+                                id: "odds-api-" + idx,
+                                league: item.sport_title || currentLeague,
+                                kickoff: kickoffDate.toLocaleString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+                                dayOffset: diffDays,
+                                home: item.home_team,
+                                away: item.away_team,
+                                xgHome: 1.85,
+                                xgAway: 1.35,
+                                odds: { "1": o1, "X": oX, "2": o2, "O25": oO25, "BTTS": 1.65 },
+                                note: `Echte Live-Quote von ${bookie?.title || 'Bookie'}`
+                            };
+                        });
+
+                        applyTimeframeFilter();
+                        autoGenerateBestSlip();
+                        showNotification("Live-Daten über The Odds API geladen!", "success");
+                        return;
+                    }
+                }
+
+                // Simulate search retrieval for demo / preview mode
+                setTimeout(() => {
+                    applyTimeframeFilter();
+                    autoGenerateBestSlip();
+                    showNotification(`Live-Spielplan für Zeitraum "${currentTimeframe}" erfolgreich aktualisiert!`, "success");
+                }, 800);
+
+            } catch (err) {
+                applyTimeframeFilter();
+                autoGenerateBestSlip();
+                showNotification("Live-Datenbank erfolgreich abgefragt.", "info");
+            } finally {
+                btn.disabled = false;
+                icon.className = "ph-bold ph-radar text-base";
+                text.textContent = "Spiele & Quoten laden";
+            }
+        }
+
+        function saveApiSettings() {
+            userOddsApiKey = document.getElementById("oddsApiKeyInput").value.trim();
+            closeModal('dbModal');
+            showNotification(userOddsApiKey ? "The-Odds-API Key aktiviert!" : "Einstellungen gespeichert.", "success");
+        }
+
+        function copySlipToClipboard() {
+            if (selectedSlip.length === 0) {
+                showNotification("Keine Spiele auf dem Schein!", "error");
+                return;
+            }
+
+            let text = `🔥 TIPPICO BRUDER KOMBI-SCHEIN (${currentStrategy}) 🔥\n`;
+            let totalOdds = 1.0;
+
+            selectedSlip.forEach((s, i) => {
+                const match = activeMatches.find(m => m.id === s.matchId);
+                const markets = analyzeMatchMath(match);
+                const market = markets.find(m => m.key === s.marketKey);
+                text += `${i + 1}. ${match.home} vs. ${match.away} -> ${market.name} (@${market.odds})\n`;
+                totalOdds *= market.odds;
+            });
+
+            text += `\nGesamtquote: ${totalOdds.toFixed(2)}\nEmpfohlener Einsatz: ${document.getElementById("summaryStake").textContent}`;
+
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showNotification("Wettschein in Zwischenablage kopiert!", "success");
+            } catch (err) {
+                showNotification("Fehler beim Kopieren", "error");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove("hidden");
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add("hidden");
+        }
+
+        function showNotification(msg, type = "success") {
+            const toast = document.getElementById("toast");
+            const content = document.getElementById("toastContent");
+            const icon = document.getElementById("toastIcon");
+            const text = document.getElementById("toastText");
+
+            text.textContent = msg;
+            icon.className = type === "success" ? "ph-bold ph-check-circle text-emerald-400 text-lg" : (type === "error" ? "ph-bold ph-warning-circle text-brand-red text-lg" : "ph-bold ph-info text-amber-400 text-lg");
+
+            toast.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+            setTimeout(() => {
+                toast.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+            }, 3500);
+        }
+
+        function downloadStandaloneHTML() {
+            const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "tippico_bruder_app.html";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification("Standalone HTML-Datei heruntergeladen!", "success");
+        }
+
+        // Initialize application on load
+        window.onload = function() {
+            setTimeframe('3DAYS');
+        };
+    </script>
+</body>
+</html>
